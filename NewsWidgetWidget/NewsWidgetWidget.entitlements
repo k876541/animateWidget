@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Widget 也必須加入同一個 App Group，才能讀主 App 寫入的 latestAnimeBrief。 -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<!-- 這個值要和主 App 的 entitlements 以及 AppGroupSettingsStore 完全一致。 -->
+		<string>group.RyanCC.NewsWidget</string>
+	</array>
+</dict>
+</plist>

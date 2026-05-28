@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App Group 讓主 App 和 Widget Extension 可以共享 UserDefaults / container。 -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<!-- 這個值要和 AppGroupSettingsStore.appGroupIdentifier 完全一致。 -->
+		<string>group.RyanCC.NewsWidget</string>
+	</array>
+</dict>
+</plist>
