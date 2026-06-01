@@ -99,7 +99,7 @@ struct AnimeWidget: Widget {
         .configurationDisplayName("Anime Widget")
         .description("顯示今天會播放的動畫，作為追番提醒。")
         // 支援的桌面/主畫面 widget 尺寸。
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
+        .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
 

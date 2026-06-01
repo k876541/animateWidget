@@ -22,7 +22,8 @@ struct JikanAnimeRepository: AnimeRepository {
             let url = try makeURL(for: mode)
             let data = try await fetchData(from: url)
             let result = try decoder.decode(JikanAnimeListResponse.self, from: data)
-            let items = result.data.map { $0.asAnimeSummary(source: url.absoluteString) }
+            let items = result.data
+                .map { $0.asAnimeSummary(source: url.absoluteString) }
 
             return AnimeBrief(
                 title: mode.title,
@@ -53,7 +54,8 @@ struct JikanAnimeRepository: AnimeRepository {
             let url = try makeURL(for: category)
             let data = try await fetchData(from: url)
             let result = try decoder.decode(JikanAnimeListResponse.self, from: data)
-            let items = result.data.map { $0.asAnimeSummary(source: url.absoluteString) }
+            let items = result.data
+                .map { $0.asAnimeSummary(source: url.absoluteString) }
 
             return AnimeBrief(
                 title: category.name,

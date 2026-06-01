@@ -2,7 +2,7 @@ import Foundation
 
 // Widget / App 共用的一份動漫簡報。
 // App 會把這份資料存進 App Group，Widget 再從 App Group 讀出來。
-struct AnimeBrief: Codable, Equatable, Sendable {
+nonisolated struct AnimeBrief: Codable, Equatable, Sendable {
     let title: String
     let mode: AnimeWidgetMode
     let items: [AnimeSummary]

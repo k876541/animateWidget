@@ -29,7 +29,7 @@ final class NewsWidgetUITests: XCTestCase {
         // app.buttons["Action"] 能找到按鈕，是因為 SwiftUI button 有 accessibility label。
         app.buttons["Action"].tap()
 
-        // 點擊後，下方列表應該切換成 Action 對應的假資料。
+        // 點擊後，下方列表應該切換成 Action 分類對應的假資料。
         XCTAssertTrue(app.staticTexts["Sousou no Frieren"].waitForExistence(timeout: 3))
         // 這裡找的是 Image 的 accessibility label。
         // 測 UI 圖片時，不會比較圖片像素，而是確認代表圖片的 UI 元件有出現在畫面上。

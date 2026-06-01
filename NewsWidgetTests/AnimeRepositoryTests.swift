@@ -94,6 +94,7 @@ final class AnimeRepositoryTests: XCTestCase {
         XCTAssertEqual(brief.items.first?.title, "Frieren: Beyond Journey's End")
         XCTAssertEqual(brief.items.first?.imageURL?.absoluteString, "https://example.com/frieren-large.jpg")
         XCTAssertEqual(brief.items.first?.airingDay, "Fridays")
+        XCTAssertEqual(brief.items.first?.synopsis, "After the party defeats the Demon King, Frieren begins a new journey.")
     }
 
     func testJikanRepositoryDecodesGenresResponse() async throws {

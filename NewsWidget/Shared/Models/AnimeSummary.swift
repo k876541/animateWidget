@@ -2,7 +2,7 @@ import Foundation
 
 // 單一動畫摘要。
 // 這個 model 是 App 列表和 Widget 顯示的最小資料單位。
-struct AnimeSummary: Identifiable, Codable, Equatable, Sendable {
+nonisolated struct AnimeSummary: Identifiable, Codable, Equatable, Sendable {
     // Jikan / MyAnimeList 使用 mal_id 當作品 id，所以這裡用 Int。
     let id: Int
     let title: String

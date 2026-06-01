@@ -7,7 +7,7 @@ import Observation
 @Observable
 final class AnimeHomeViewModel {
     private let settingsStore: AppGroupSettingsStore
-    private let repository: AnimeRepository
+    private var repository: AnimeRepository
 
     // private(set) 讓 View 可以讀取狀態，但修改必須透過 ViewModel method。
     private(set) var categories: [AnimeCategory] = []
