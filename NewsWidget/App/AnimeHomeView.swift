@@ -332,7 +332,7 @@ private struct AnimeSummaryRow: View {
                     Spacer()
 
                     if let episodes = item.episodes {
-                        Text("\(episodes) 話"
+                        Text("\(episodes) 話")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
