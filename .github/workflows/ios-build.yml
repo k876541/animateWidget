@@ -22,3 +22,28 @@ jobs:
             -project NewsWidget.xcodeproj \
             -scheme NewsWidget \
             -destination 'generic/platform=iOS Simulator'
+
+      # Unit Test 必須在實際 Simulator 上執行。
+      # GitHub runner 提供的 Simulator 型號可能隨 Xcode 版本改變，
+      # 因此不要寫死 iPhone 型號，而是動態取得第一台可用的 iPhone。
+      - name: Select iPhone simulator
+        run: |
+          SIMULATOR_ID="$(
+            xcrun simctl list devices available --json |
+            ruby -rjson -e '
+              devices = JSON.parse(STDIN.read).fetch("devices").values.flatten
+              simulator = devices.find { |device| device.fetch("name", "").start_with?("iPhone") }
+              abort "No available iPhone simulator found" unless simulator
+              puts simulator.fetch("udid")
+            '
+          )"
+          echo "SIMULATOR_ID=$SIMULATOR_ID" >> "$GITHUB_ENV"
+
+      # 第一階段只執行 Unit Test，暫時不跑較慢的 UI Test。
+      - name: Run unit tests
+        run: |
+          xcodebuild test \
+            -project NewsWidget.xcodeproj \
+            -scheme NewsWidget \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -only-testing:NewsWidgetTests
