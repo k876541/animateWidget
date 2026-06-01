@@ -1,0 +1,24 @@
+name: iOS Build
+
+# 每次 push 或建立 Pull Request 時，自動確認專案可以在乾淨的 macOS 環境編譯。
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      # GitHub Actions 的 runner 一開始沒有專案檔案，所以先 checkout repository。
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 使用 Simulator SDK 編譯 App 和 Widget Extension。
+      # generic destination 不依賴某一台特定 Simulator，適合 CI build。
+      - name: Build app
+        run: |
+          xcodebuild build \
+            -project NewsWidget.xcodeproj \
+            -scheme NewsWidget \
+            -destination 'generic/platform=iOS Simulator'
