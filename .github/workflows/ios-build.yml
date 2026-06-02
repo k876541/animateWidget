@@ -7,12 +7,19 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    # 專案目前使用 iOS 26.5 deployment target。
+    # macos-26 runner 有安裝 Xcode 26.5 與對應的 iOS 26.5 Simulator runtime。
+    runs-on: macos-26
 
     steps:
       # GitHub Actions 的 runner 一開始沒有專案檔案，所以先 checkout repository。
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      # macos-26 runner 預設不一定使用 Xcode 26.5。
+      # 明確切換版本，讓 CI 環境和本機的 Xcode 26.5 一致。
+      - name: Select Xcode 26.5
+        run: sudo xcode-select --switch /Applications/Xcode_26.5.app/Contents/Developer
 
       # 使用 Simulator SDK 編譯 App 和 Widget Extension。
       # generic destination 不依賴某一台特定 Simulator，適合 CI build。
@@ -25,16 +32,22 @@ jobs:
 
       # Unit Test 必須在實際 Simulator 上執行。
       # GitHub runner 提供的 Simulator 型號可能隨 Xcode 版本改變，
-      # 因此不要寫死 iPhone 型號，而是動態取得第一台可用的 iPhone。
-      - name: Select iPhone simulator
+      # 因此請 xcodebuild 列出與目前 scheme 相容的 destination，再選第一台 iPhone。
+      - name: Select compatible iPhone simulator
         run: |
           SIMULATOR_ID="$(
-            xcrun simctl list devices available --json |
-            ruby -rjson -e '
-              devices = JSON.parse(STDIN.read).fetch("devices").values.flatten
-              simulator = devices.find { |device| device.fetch("name", "").start_with?("iPhone") }
-              abort "No available iPhone simulator found" unless simulator
-              puts simulator.fetch("udid")
+            xcodebuild -showdestinations \
+              -project NewsWidget.xcodeproj \
+              -scheme NewsWidget |
+            ruby -e '
+              destinations = STDIN.read.lines
+              simulator = destinations.find do |line|
+                line.include?("platform:iOS Simulator") &&
+                  line.include?("name:iPhone") &&
+                  !line.include?("placeholder")
+              end
+              abort "No compatible iPhone simulator found for NewsWidget scheme" unless simulator
+              puts simulator[/id:([^,}]+)/, 1].strip
             '
           )"
           echo "SIMULATOR_ID=$SIMULATOR_ID" >> "$GITHUB_ENV"

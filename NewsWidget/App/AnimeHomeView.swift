@@ -17,6 +17,10 @@ struct AnimeHomeView: View {
     // selectedPosterItem 有值就顯示滿版 overlay，設回 nil 就關閉。
     @State private var selectedPosterItem: AnimeSummary?
 
+    // 記錄分類 ScrollView 目前停留的頁碼。
+    // Optional 是因為 ScrollView 尚未完成 layout 時，可能暫時沒有選中的 page。
+    @State private var selectedCategoryPageID: Int? = 0
+
     var body: some View {
         // 最外層使用 ZStack，才能把海報預覽疊在首頁上方。
         ZStack {
@@ -124,6 +128,8 @@ struct AnimeHomeView: View {
                             .padding(.horizontal, 6)
                             // 一頁固定吃掉可視寬度，所以水平滑動時看起來會是 6 個一組。
                             .frame(width: proxy.size.width)
+                            // scrollPosition 透過 id 判斷目前停在哪一頁。
+                            .id(page.id)
                         }
                     }
                     .scrollTargetLayout()
@@ -134,11 +140,37 @@ struct AnimeHomeView: View {
                 .scrollIndicators(.hidden)
                 // 避免滑動過程中相鄰頁的內容顯示在目前頁面的外側。
                 .clipped()
+                // 使用者滑動畫面時更新 page control；點擊圓點時也能反向切換頁面。
+                .scrollPosition(id: $selectedCategoryPageID)
             }
             // 分類區的總高度。
             // 若要顯示更多排卡片或調整卡片高度，可以從這裡一起調整。
             .frame(height: 200)
+
+            categoryPageControl
         }
+    }
+
+    // 顯示分類 ScrollView 的目前頁數。
+    // 每個圓點也是 Button，使用者可以直接點擊切換頁面。
+    private var categoryPageControl: some View {
+        HStack(spacing: 8) {
+            ForEach(categoryPages) { page in
+                Button {
+                    withAnimation {
+                        selectedCategoryPageID = page.id
+                    }
+                } label: {
+                    Circle()
+                        .fill(selectedCategoryPageID == page.id ? Color.accentColor : Color.secondary.opacity(0.35))
+                        .frame(width: 8, height: 8)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("分類第 \(page.id + 1) 頁")
+                .accessibilityAddTraits(selectedCategoryPageID == page.id ? .isSelected : [])
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Anime List
