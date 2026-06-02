@@ -1,15 +1,29 @@
 name: iOS Build
 
-# 每次 push 或建立 Pull Request 時，自動確認專案可以在乾淨的 macOS 環境編譯。
+# main 有新 commit，或準備合併進 main 的 Pull Request 有變動時，
+# 自動確認專案可以在乾淨的 macOS 環境編譯。
+# feature branch 單純 push 時不執行，避免和 pull_request 重複跑相同檢查。
 on:
   push:
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
+
+# 同一個 PR 或 branch 推送新 commit 時，取消尚未完成的舊 CI。
+# github.head_ref 在 Pull Request 代表來源 branch；push 時則改用 github.ref。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     # 專案目前使用 iOS 26.5 deployment target。
     # macos-26 runner 有安裝 Xcode 26.5 與對應的 iOS 26.5 Simulator runtime。
     runs-on: macos-26
+    # Simulator 若卡住，最多等待 15 分鐘，避免持續占用 GitHub Actions 額度。
+    timeout-minutes: 15
 
     steps:
       # GitHub Actions 的 runner 一開始沒有專案檔案，所以先 checkout repository。
