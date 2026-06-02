@@ -6,11 +6,6 @@ name: Mock iOS Delivery
 on:
   workflow_dispatch:
 
-# GitHub Actions runner 正在將 JavaScript Actions 從 Node.js 20 升級到 24。
-# 先主動啟用 Node.js 24，避免 upload-artifact 顯示淘汰警告。
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 # 同一個 branch 重複執行時，取消尚未完成的舊任務，避免浪費額度。
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -56,8 +51,9 @@ jobs:
 
       # Artifact 是這次 workflow 的輸出產物。
       # 執行完成後，可以在該次 GitHub Actions run 的頁面下載 zip。
+      # v7 原生使用 Node.js 24，避免舊版 action 的淘汰警告。
       - name: Upload simulator app artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: NewsWidget-Simulator-${{ github.sha }}
           path: build/NewsWidget-Simulator.zip
