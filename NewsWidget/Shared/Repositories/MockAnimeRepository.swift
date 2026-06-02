@@ -1,7 +1,7 @@
 import Foundation
 
-// 第一版先使用假資料，讓 App / Widget 流程先穩定。
-// 下一步可以新增 JikanAnimeRepository，把資料來源換成 https://api.jikan.moe/v4。
+// 固定假資料只供 XCTest、UI Test 與 Xcode Preview 使用。
+// 正式 App 使用 JikanAnimeRepository，不會在 API 失敗時回退到這裡。
 struct MockAnimeRepository: AnimeRepository {
     func fetchAnimeBrief(for mode: AnimeWidgetMode) async -> AnimeBrief {
         let items = Self.itemsByMode[mode, default: []]
@@ -18,30 +18,24 @@ struct MockAnimeRepository: AnimeRepository {
         Self.categories
     }
 
-    func fetchAnimeBrief(for category: AnimeCategory) async -> AnimeBrief {
+    func fetchAnimeBrief(for category: AnimeCategory, page: Int) async -> AnimeBrief {
         let items = Self.itemsByCategoryID[category.id, default: Self.itemsByMode[.seasonal, default: []]]
+        let startIndex = min((page - 1) * 10, items.count)
+        let endIndex = min(startIndex + 10, items.count)
 
         return AnimeBrief(
             title: category.name,
             mode: .seasonal,
-            items: Array(items.prefix(10)),
+            items: Array(items[startIndex..<endIndex]),
             updatedAt: .now
         )
     }
 
-    // Widget preview 或 App 還沒寫入 latestAnimeBrief 時使用的預覽資料。
+    // Widget Preview 使用的固定資料，方便在沒有網路時調整版面。
     static let fallbackBrief = AnimeBrief(
         title: AnimeWidgetMode.seasonal.title,
         mode: .seasonal,
         items: Array(itemsByMode[.seasonal, default: []].prefix(5)),
-        updatedAt: .now
-    )
-
-    // Widget 只顯示今日放送，用這份資料做預覽和 App 尚未寫入時的 fallback。
-    static let fallbackTodayBrief = AnimeBrief(
-        title: AnimeWidgetMode.todaySchedule.title,
-        mode: .todaySchedule,
-        items: Array(itemsByMode[.todaySchedule, default: []].prefix(5)),
         updatedAt: .now
     )
 

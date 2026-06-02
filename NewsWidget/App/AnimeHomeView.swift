@@ -204,7 +204,10 @@ struct AnimeHomeView: View {
             if viewModel.brief.items.isEmpty {
                 ContentUnavailableView("尚無動畫", systemImage: "tv", description: Text("請選擇一個動畫分類。"))
             } else {
-                VStack(spacing: 12) {
+                // 使用 LazyVStack，讓 row 接近畫面可視範圍時才建立。
+                // 如果改用一般 VStack，所有 row 會一次建立，最後一列的 .task 也會立刻執行，
+                // 導致畫面尚未往下滑就連續請求 page=2、page=3。
+                LazyVStack(spacing: 12) {
                     ForEach(viewModel.brief.items) { item in
                         AnimeSummaryRow(item: item, tint: viewModel.brief.mode.tint)
                             // 讓整列空白區域也能接收點擊，而不只文字和圖片可以點。
@@ -212,6 +215,22 @@ struct AnimeHomeView: View {
                             .onTapGesture {
                                 selectedPosterItem = item
                             }
+                            // 最後一列進入畫面時，自動載入下一頁 10 筆資料。
+                            .task {
+                                await viewModel.loadMoreIfNeeded(currentItem: item)
+                            }
+                    }
+
+                    if viewModel.isLoadingMore {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                    } else if !viewModel.hasMoreAnime {
+                        // 下一頁沒有資料時，明確提示使用者已經滑到列表底部。
+                        Text("沒有更多資料")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
                     }
                 }
             }

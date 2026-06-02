@@ -132,6 +132,65 @@ final class AnimeRepositoryTests: XCTestCase {
 
         XCTAssertEqual(categories, [AnimeCategory(id: 1, name: "Action", count: 5123)])
     }
+
+    func testJikanRepositoryRequestsSelectedCategoryPage() async {
+        // 無限捲動需要在 URL 帶 page，否則每次都只會抓到相同的前 10 筆。
+        MockURLProtocol.requestHandler = { request in
+            XCTAssertEqual(request.url?.path, "/v4/anime")
+            XCTAssertEqual(
+                request.url?.query,
+                "genres=1&order_by=popularity&sort=asc&limit=10&page=2"
+            )
+
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+
+            return (response, Data(#"{"data":[]}"#.utf8))
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let repository = JikanAnimeRepository(urlSession: session)
+
+        let brief = await repository.fetchAnimeBrief(
+            for: AnimeCategory(id: 1, name: "Action", count: 5_000),
+            page: 2
+        )
+
+        XCTAssertTrue(brief.items.isEmpty)
+    }
+
+    func testJikanRepositoryReturnsEmptyBriefWhenRequestFails() async {
+        // Arrange：模擬 Jikan 暫時回傳伺服器錯誤。
+        // 正式 repository 不應因此偷偷換成假動畫，否則畫面內容會讓人誤判。
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 500,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+
+            return (response, Data())
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let repository = JikanAnimeRepository(urlSession: session)
+
+        // Act：呼叫正式 repository。
+        let brief = await repository.fetchAnimeBrief(for: .seasonal)
+
+        // Assert：錯誤時保留畫面標題，但列表必須是空的。
+        XCTAssertEqual(brief.title, AnimeWidgetMode.seasonal.title)
+        XCTAssertTrue(brief.items.isEmpty)
+    }
 }
 
 private final class MockURLProtocol: URLProtocol {

@@ -45,4 +45,60 @@ final class AnimeHomeViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.brief.title, "Comedy")
         XCTAssertFalse(viewModel.brief.items.isEmpty)
     }
+
+    func testLoadMoreAppendsNextPage() async {
+        // 使用專門的 fake repository，第一頁和第二頁各回傳 10 筆資料。
+        // 這樣可以精準驗證 ViewModel 是 append，而不是覆蓋原本列表。
+        let store = AppGroupSettingsStore(userDefaults: UserDefaults(suiteName: "AnimeHomeViewModelTests.\(UUID().uuidString)")!)
+        let viewModel = AnimeHomeViewModel(settingsStore: store, repository: PagingAnimeRepository())
+
+        await viewModel.onAppear()
+        let firstPageLastItem = viewModel.brief.items.last!
+        await viewModel.loadMoreIfNeeded(currentItem: firstPageLastItem)
+
+        XCTAssertEqual(viewModel.brief.items.count, 20)
+        XCTAssertEqual(viewModel.brief.items.first?.id, 1)
+        XCTAssertEqual(viewModel.brief.items.last?.id, 20)
+        XCTAssertFalse(viewModel.isLoadingMore)
+    }
+
+    func testLoadMoreStopsWhenNextPageIsEmpty() async {
+        // 第三頁為空時，ViewModel 應該停止繼續請求。
+        // 畫面會根據 hasMoreAnime 顯示「沒有更多資料」。
+        let store = AppGroupSettingsStore(userDefaults: UserDefaults(suiteName: "AnimeHomeViewModelTests.\(UUID().uuidString)")!)
+        let viewModel = AnimeHomeViewModel(settingsStore: store, repository: PagingAnimeRepository())
+
+        await viewModel.onAppear()
+        await viewModel.loadMoreIfNeeded(currentItem: viewModel.brief.items.last!)
+        await viewModel.loadMoreIfNeeded(currentItem: viewModel.brief.items.last!)
+
+        XCTAssertEqual(viewModel.brief.items.count, 20)
+        XCTAssertFalse(viewModel.hasMoreAnime)
+        XCTAssertFalse(viewModel.isLoadingMore)
+    }
+}
+
+// 測試無限捲動用的 fake repository。
+// 分類第 1 頁回傳 id 1...10，第 2 頁回傳 id 11...20。
+private struct PagingAnimeRepository: AnimeRepository {
+    func fetchAnimeBrief(for mode: AnimeWidgetMode) async -> AnimeBrief {
+        AnimeBrief(title: mode.title, mode: mode, items: [], updatedAt: .now)
+    }
+
+    func fetchCategories() async -> [AnimeCategory] {
+        [AnimeCategory(id: 1, name: "Action", count: 20)]
+    }
+
+    func fetchAnimeBrief(for category: AnimeCategory, page: Int) async -> AnimeBrief {
+        guard page <= 2 else {
+            return AnimeBrief(title: category.name, mode: .seasonal, items: [], updatedAt: .now)
+        }
+
+        let startID = ((page - 1) * 10) + 1
+        let items = (startID..<(startID + 10)).map { id in
+            AnimeSummary(id: id, title: "Anime \(id)")
+        }
+
+        return AnimeBrief(title: category.name, mode: .seasonal, items: items, updatedAt: .now)
+    }
 }

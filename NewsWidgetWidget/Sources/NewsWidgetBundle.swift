@@ -31,7 +31,13 @@ struct AnimeWidgetProvider: TimelineProvider {
     // Widget 只讀取已整理好的 AnimeBrief，不在 extension 裡頻繁呼叫 Jikan API。
     private func makeEntry() -> AnimeWidgetEntry {
         let store = AppGroupSettingsStore()
-        let brief = store.loadLatestTodayAnimeBrief() ?? MockAnimeRepository.fallbackTodayBrief
+        // App 尚未同步正式資料時顯示空列表，不用假動畫混充今日播放資料。
+        let brief = store.loadLatestTodayAnimeBrief() ?? AnimeBrief(
+            title: AnimeWidgetMode.todaySchedule.title,
+            mode: .todaySchedule,
+            items: [],
+            updatedAt: .now
+        )
         return AnimeWidgetEntry(date: .now, brief: brief)
     }
 }
