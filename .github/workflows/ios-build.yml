@@ -32,24 +32,27 @@ jobs:
 
       # Unit Test 必須在實際 Simulator 上執行。
       # GitHub runner 提供的 Simulator 型號可能隨 Xcode 版本改變，
-      # 因此請 xcodebuild 列出與目前 scheme 相容的 destination，再選第一台 iPhone。
+      # 因此請 simctl 列出目前 runner 已安裝的裝置，再從目前 Xcode SDK
+      # 對應的 runtime 選第一台可用 iPhone。
+      # 不使用 xcodebuild -showdestinations，因為它可能只列出 placeholder，
+      # 即使 runner 實際上已經安裝可供測試使用的 Simulator。
       - name: Select compatible iPhone simulator
         run: |
+          export SIMULATOR_RUNTIME="com.apple.CoreSimulator.SimRuntime.iOS-$(xcrun --sdk iphonesimulator --show-sdk-version | tr '.' '-')"
           SIMULATOR_ID="$(
-            xcodebuild -showdestinations \
-              -project NewsWidget.xcodeproj \
-              -scheme NewsWidget |
-            ruby -e '
-              destinations = STDIN.read.lines
-              simulator = destinations.find do |line|
-                line.include?("platform:iOS Simulator") &&
-                  line.include?("name:iPhone") &&
-                  !line.include?("placeholder")
+            xcrun simctl list devices available --json |
+            ruby -rjson -e '
+              devices = JSON.parse(STDIN.read).fetch("devices").fetch(ENV.fetch("SIMULATOR_RUNTIME"))
+              simulator = devices.find do |device|
+                device["name"].start_with?("iPhone") &&
+                  device["isAvailable"] != false
               end
               abort "No compatible iPhone simulator found for NewsWidget scheme" unless simulator
-              puts simulator[/id:([^,}]+)/, 1].strip
+              puts simulator["udid"]
             '
           )"
+          echo "Selected runtime: $SIMULATOR_RUNTIME"
+          echo "Selected simulator: $SIMULATOR_ID"
           echo "SIMULATOR_ID=$SIMULATOR_ID" >> "$GITHUB_ENV"
 
       # 第一階段只執行 Unit Test，暫時不跑較慢的 UI Test。

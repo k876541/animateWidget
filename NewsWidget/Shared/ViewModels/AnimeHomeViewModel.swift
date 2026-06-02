@@ -53,6 +53,14 @@ final class AnimeHomeViewModel {
         // 切換分類或手動重新整理時，都從第 1 頁重新開始。
         currentPage = 1
         hasMoreAnime = true
+        // 先移除畫面上的舊資料，避免使用者在等待 API 時誤以為仍是最新內容。
+        brief = AnimeBrief(
+            title: selectedCategory.name,
+            mode: .seasonal,
+            items: [],
+            updatedAt: .now
+        )
+
         let loadedBrief = await repository.fetchAnimeBrief(for: selectedCategory, page: currentPage)
         brief = loadedBrief
         hasMoreAnime = loadedBrief.items.count == 10

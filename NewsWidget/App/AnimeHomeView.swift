@@ -9,6 +9,10 @@ import SwiftUI
 // 2. categorySection：可水平翻頁的動畫分類。
 // 3. animeSection：使用者選取分類後顯示的動畫列表。
 struct AnimeHomeView: View {
+    // ScrollViewReader 會使用這個 id 找到首頁頂部。
+    // 使用固定字串，而不是依賴某個畫面元件，讓之後調整 header 時仍可正常捲動。
+    private static let topScrollAnchorID = "animeHomeTop"
+
     // @State 讓 SwiftUI 觀察 ViewModel 的狀態。
     // ViewModel 內的資料更新時，依賴那些資料的畫面會重新繪製。
     @State private var viewModel = AnimeHomeViewModel()
@@ -26,35 +30,49 @@ struct AnimeHomeView: View {
         ZStack {
             // NavigationStack 提供 navigation title 與右上角 toolbar。
             NavigationStack {
-                // 整個首頁可以垂直滑動，避免動畫摘要太長時超出畫面。
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        header
-                        categorySection
-                        animeSection
-                    }
-                    .padding(20)
-                }
-                .background(Color(.systemGroupedBackground))
-                .navigationTitle("Anime Widget")
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        // 手動重新抓取目前分類的動畫資料。
-                        Button {
-                            // refresh() 是 async function。
-                            // Button action 本身不是 async，所以用 Task 進入非同步流程。
-                            Task { await viewModel.refresh() }
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
+                // ScrollViewReader 提供 scrollTo，可以由右上角按鈕控制垂直捲動位置。
+                ScrollViewReader { proxy in
+                    // 整個首頁可以垂直滑動，避免動畫摘要太長時超出畫面。
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 24) {
+                            // 透明 anchor 不佔畫面高度，只用來標記 ScrollView 最頂端。
+                            Color.clear
+                                .frame(height: 0)
+                                .id(Self.topScrollAnchorID)
+
+                            header
+                            categorySection
+                            animeSection
                         }
-                        .accessibilityLabel("重新整理")
-                        .disabled(viewModel.isLoading)
+                        .padding(20)
                     }
-                }
-                // View 第一次出現在畫面時載入分類和動畫資料。
-                // .task 會配合 SwiftUI View 的生命週期管理非同步工作。
-                .task {
-                    await viewModel.onAppear()
+                    .background(Color(.systemGroupedBackground))
+                    .navigationTitle("Anime Widget")
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            // 手動清空目前列表，重新抓取第 1 頁，再回到首頁頂部。
+                            Button {
+                                // refresh() 是 async function。
+                                // Button action 本身不是 async，所以用 Task 進入非同步流程。
+                                Task {
+                                    await viewModel.refresh()
+
+                                    withAnimation {
+                                        proxy.scrollTo(Self.topScrollAnchorID, anchor: .top)
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                            }
+                            .accessibilityLabel("重新整理")
+                            .disabled(viewModel.isLoading)
+                        }
+                    }
+                    // View 第一次出現在畫面時載入分類和動畫資料。
+                    // .task 會配合 SwiftUI View 的生命週期管理非同步工作。
+                    .task {
+                        await viewModel.onAppear()
+                    }
                 }
             }
 
