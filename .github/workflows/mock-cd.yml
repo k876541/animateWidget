@@ -1,0 +1,59 @@
+name: Mock iOS Delivery
+
+# 模擬 CD 的第一個版本先使用手動觸發。
+# 到 GitHub Actions 頁面選擇 Mock iOS Delivery，再按 Run workflow 即可執行。
+# 流程確認穩定後，才考慮改成 main 更新時自動執行。
+on:
+  workflow_dispatch:
+
+# 同一個 branch 重複執行時，取消尚未完成的舊任務，避免浪費額度。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-simulator-app:
+    # 沿用 CI 使用的環境，避免 Xcode 和 SDK 版本不同。
+    runs-on: macos-26
+    timeout-minutes: 15
+
+    steps:
+      # GitHub Actions runner 一開始沒有專案檔案，所以先 checkout repository。
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # 明確指定 Xcode 版本，讓模擬 CD 和 CI 使用相同的建置工具。
+      - name: Select Xcode 26.5
+        run: sudo xcode-select --switch /Applications/Xcode_26.5.app/Contents/Developer
+
+      # 免費 Apple Account 無法建立可上傳 TestFlight 的簽章 IPA。
+      # 這裡先編譯 Release 版 Simulator App，練習 CD 的打包與產物保存流程。
+      - name: Build release simulator app
+        run: |
+          xcodebuild build \
+            -project NewsWidget.xcodeproj \
+            -scheme NewsWidget \
+            -configuration Release \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData
+
+      # 將 .app 打包成 zip，讓 GitHub Actions 可以保存並提供下載。
+      # Simulator App 只能交給 Simulator 使用，不能直接安裝到實體 iPhone。
+      - name: Package simulator app
+        run: |
+          ditto \
+            -c \
+            -k \
+            --sequesterRsrc \
+            --keepParent \
+            build/DerivedData/Build/Products/Release-iphonesimulator/NewsWidget.app \
+            build/NewsWidget-Simulator.zip
+
+      # Artifact 是這次 workflow 的輸出產物。
+      # 執行完成後，可以在該次 GitHub Actions run 的頁面下載 zip。
+      - name: Upload simulator app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NewsWidget-Simulator-${{ github.sha }}
+          path: build/NewsWidget-Simulator.zip
+          retention-days: 7
