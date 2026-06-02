@@ -76,6 +76,24 @@ final class AnimeHomeViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.hasMoreAnime)
         XCTAssertFalse(viewModel.isLoadingMore)
     }
+
+    func testRefreshReplacesLoadedPagesWithFirstPage() async {
+        // Arrange：先模擬使用者往下滑，讓列表載入第 1 頁和第 2 頁，共 20 筆。
+        let store = AppGroupSettingsStore(userDefaults: UserDefaults(suiteName: "AnimeHomeViewModelTests.\(UUID().uuidString)")!)
+        let viewModel = AnimeHomeViewModel(settingsStore: store, repository: PagingAnimeRepository())
+
+        await viewModel.onAppear()
+        await viewModel.loadMoreIfNeeded(currentItem: viewModel.brief.items.last!)
+        XCTAssertEqual(viewModel.brief.items.count, 20)
+
+        // Act：模擬點擊右上角重新整理按鈕後執行的 refresh。
+        await viewModel.refresh()
+
+        // Assert：舊分頁資料要被移除，只留下重新取得的第 1 頁。
+        XCTAssertEqual(viewModel.brief.items.count, 10)
+        XCTAssertEqual(viewModel.brief.items.first?.id, 1)
+        XCTAssertEqual(viewModel.brief.items.last?.id, 10)
+    }
 }
 
 // 測試無限捲動用的 fake repository。
