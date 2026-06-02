@@ -6,6 +6,11 @@ name: Mock iOS Delivery
 on:
   workflow_dispatch:
 
+# GitHub Actions runner 正在將 JavaScript Actions 從 Node.js 20 升級到 24。
+# 先主動啟用 Node.js 24，避免 upload-artifact 顯示淘汰警告。
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # 同一個 branch 重複執行時，取消尚未完成的舊任務，避免浪費額度。
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
